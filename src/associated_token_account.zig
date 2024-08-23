@@ -1,6 +1,6 @@
 const std = @import("std");
-const sol = @import("sol");
 const bincode = @import("bincode");
+const sol = @import("solana-program-sdk");
 
 pub const program_id = sol.PublicKey.comptimeFromBase58("ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL");
 
