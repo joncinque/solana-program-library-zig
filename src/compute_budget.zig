@@ -8,11 +8,10 @@ const ComputeBudget = @This();
 
 pub const id = sol.PublicKey.comptimeFromBase58("ComputeBudget111111111111111111111111111111");
 
-pub fn requestHeapFrame(allocator: std.mem.Allocator, params: struct { bytes: u32 }) !sol.Instruction {
+pub fn requestHeapFrame(allocator: std.mem.Allocator, bytes: u32) !sol.Instruction {
     const data = try bincode.writeAlloc(allocator, ComputeBudget.Instruction{
-        .request_heap_frame = .{ .bytes = params.bytes },
+        .request_heap_frame = .{ .bytes = bytes },
     }, .{});
-    defer allocator.free(data);
 
     return sol.Instruction.from(.{
         .program_id = &id,
@@ -21,11 +20,10 @@ pub fn requestHeapFrame(allocator: std.mem.Allocator, params: struct { bytes: u3
     });
 }
 
-pub fn setComputeUnitLimit(allocator: std.mem.Allocator, params: struct { units: u32 }) !sol.Instruction {
+pub fn setComputeUnitLimit(allocator: std.mem.Allocator, units: u32) !sol.Instruction {
     const data = try bincode.writeAlloc(allocator, ComputeBudget.Instruction{
-        .set_compute_unit_limit = .{ .units = params.units },
+        .set_compute_unit_limit = .{ .units = units },
     }, .{});
-    defer allocator.free(data);
 
     return sol.Instruction.from(.{
         .program_id = &id,
@@ -34,11 +32,10 @@ pub fn setComputeUnitLimit(allocator: std.mem.Allocator, params: struct { units:
     });
 }
 
-pub fn setComputeUnitPrice(allocator: std.mem.Allocator, params: struct { micro_lamports: u64 }) !sol.Instruction {
+pub fn setComputeUnitPrice(allocator: std.mem.Allocator, micro_lamports: u64) !sol.Instruction {
     const data = try bincode.writeAlloc(allocator, ComputeBudget.Instruction{
-        .set_compute_unit_price = .{ .micro_lamports = params.micro_lamports },
+        .set_compute_unit_price = .{ .micro_lamports = micro_lamports },
     }, .{});
-    defer allocator.free(data);
 
     return sol.Instruction.from(.{
         .program_id = &id,
@@ -47,11 +44,10 @@ pub fn setComputeUnitPrice(allocator: std.mem.Allocator, params: struct { micro_
     });
 }
 
-pub fn setLoadedAccountsDataSizeLimit(allocator: std.mem.Allocator, params: struct { bytes: u32 }) !sol.Instruction {
+pub fn setLoadedAccountsDataSizeLimit(allocator: std.mem.Allocator, bytes: u32) !sol.Instruction {
     const data = try bincode.writeAlloc(allocator, ComputeBudget.Instruction{
-        .set_loaded_accounts_data_size_limit = .{ .bytes = params.bytes },
+        .set_loaded_accounts_data_size_limit = .{ .bytes = bytes },
     }, .{});
-    defer allocator.free(data);
 
     return sol.Instruction.from(.{
         .program_id = &id,
@@ -86,33 +82,49 @@ pub const Instruction = union(enum(u8)) {
 };
 
 test "build request heap frame ix" {
-    const ix = try requestHeapFrame(std.testing.allocator, .{ .bytes = 4_000 });
+    const ix = try requestHeapFrame(std.testing.allocator, 4000);
+
+    defer std.testing.allocator.free(ix.data[0..ix.data_len]);
 
     try std.testing.expect(ix.program_id.equals(id));
     try std.testing.expectEqual(0, ix.accounts_len);
     try std.testing.expectEqual(5, ix.data_len);
+
+    try std.testing.expect(std.mem.eql(u8, &.{ 0x1, 0xa0, 0xf, 0x0, 0x0 }, ix.data[0..ix.data_len]));
 }
 
 test "build set compute limit ix" {
-    const ix = try setComputeUnitLimit(std.testing.allocator, .{ .units = 1_400_000 });
+    const ix = try setComputeUnitLimit(std.testing.allocator, 1_400_000);
+
+    defer std.testing.allocator.free(ix.data[0..ix.data_len]);
 
     try std.testing.expect(ix.program_id.equals(id));
     try std.testing.expectEqual(0, ix.accounts_len);
     try std.testing.expectEqual(5, ix.data_len);
+
+    try std.testing.expect(std.mem.eql(u8, &.{ 0x2, 0xc0, 0x5c, 0x15, 0x0 }, ix.data[0..ix.data_len]));
 }
 
 test "build set compute unit price ix" {
-    const ix = try setComputeUnitPrice(std.testing.allocator, .{ .micro_lamports = 200_000 });
+    const ix = try setComputeUnitPrice(std.testing.allocator, 1000);
+
+    defer std.testing.allocator.free(ix.data[0..ix.data_len]);
 
     try std.testing.expect(ix.program_id.equals(id));
     try std.testing.expectEqual(0, ix.accounts_len);
     try std.testing.expectEqual(9, ix.data_len);
+
+    try std.testing.expect(std.mem.eql(u8, &.{ 0x3, 0xe8, 0x3, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0 }, ix.data[0..ix.data_len]));
 }
 
 test "build set loaded accounts data-size limit ix" {
-    const ix = try setLoadedAccountsDataSizeLimit(std.testing.allocator, .{ .bytes = 1200 });
+    const ix = try setLoadedAccountsDataSizeLimit(std.testing.allocator, 1200);
+
+    defer std.testing.allocator.free(ix.data[0..ix.data_len]);
 
     try std.testing.expect(ix.program_id.equals(id));
     try std.testing.expectEqual(0, ix.accounts_len);
     try std.testing.expectEqual(5, ix.data_len);
+
+    try std.testing.expect(std.mem.eql(u8, &.{ 0x4, 0xb0, 0x4, 0x0, 0x0 }, ix.data[0..ix.data_len]));
 }
