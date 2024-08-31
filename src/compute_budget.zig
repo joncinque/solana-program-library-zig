@@ -20,9 +20,9 @@ pub fn requestHeapFrame(allocator: std.mem.Allocator, bytes: u32) !sol.Instructi
     });
 }
 
-pub fn setComputeUnitLimit(allocator: std.mem.Allocator, units: u32) !sol.Instruction {
+pub fn setComputeUnitLimit(allocator: std.mem.Allocator, compute_units: u32) !sol.Instruction {
     const data = try bincode.writeAlloc(allocator, ComputeBudget.Instruction{
-        .set_compute_unit_limit = .{ .units = units },
+        .set_compute_unit_limit = .{ .compute_units = compute_units },
     }, .{});
 
     return sol.Instruction.from(.{
@@ -68,7 +68,7 @@ pub const Instruction = union(enum(u8)) {
     },
     /// Set a specific compute unit limit that the transaction is allowed to consume.
     set_compute_unit_limit: struct {
-        units: u32,
+        compute_units: u32,
     },
     /// Set a compute unit price in "micro-lamports" to pay a higher transaction
     /// fee for higher transaction prioritization.
