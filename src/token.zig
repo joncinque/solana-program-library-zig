@@ -2,7 +2,8 @@ const std = @import("std");
 const sol = @import("solana-program-sdk");
 const bincode = @import("bincode");
 
-pub const program_id = sol.PublicKey.comptimeFromBase58("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA");
+const TokenProgram = @This();
+pub const id = sol.PublicKey.comptimeFromBase58("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA");
 
 pub const Error = error{
     NotRentExempt,
@@ -558,24 +559,24 @@ pub const Multisig = struct {
     signers: [Multisig.max_signers]sol.PublicKey,
 };
 
-pub fn initializeMint(mint: sol.Account.Info, params: struct {
+pub fn initializeMint(allocator: std.mem.Allocator, mint: sol.Account.Info, params: struct {
     mint_authority_id: sol.PublicKey,
     freeze_authority_id: ?sol.PublicKey,
     decimals: u8,
     rent: sol.Account.Info,
     seeds: []const []const []const u8 = &.{},
 }) !void {
-    const data = try bincode.writeAlloc(sol.allocator, Instruction{
+    const data = try bincode.writeAlloc(allocator, TokenProgram.Instruction{
         .initialize_mint = .{
             .decimals = params.decimals,
             .mint_authority_id = params.mint_authority_id,
             .freeze_authority_id = params.freeze_authority_id,
         },
     }, .{});
-    defer sol.allocator.free(data);
+    defer allocator.free(data);
 
     const instruction = sol.Instruction.from(.{
-        .program_id = &program_id,
+        .program_id = &id,
         .accounts = &[_]sol.Account.Param{
             .{ .id = mint.id, .is_writable = true, .is_signer = false },
             .{ .id = params.rent.id, .is_writable = false, .is_signer = false },
@@ -586,17 +587,17 @@ pub fn initializeMint(mint: sol.Account.Info, params: struct {
     try instruction.invokeSigned(&.{ mint, params.rent }, params.seeds);
 }
 
-pub fn initializeAccount(account: sol.Account.Info, params: struct {
+pub fn initializeAccount(allocator: std.mem.Allocator, account: sol.Account.Info, params: struct {
     mint: sol.Account.Info,
     owner: sol.Account.Info,
     rent: sol.Account.Info,
     seeds: []const []const []const u8 = &.{},
 }) !void {
-    const data = try bincode.writeAlloc(sol.allocator, Instruction.initialize_account, .{});
-    defer sol.allocator.free(data);
+    const data = try bincode.writeAlloc(allocator, TokenProgram.Instruction.initialize_account, .{});
+    defer allocator.free(data);
 
     const instruction = sol.Instruction.from(.{
-        .program_id = &program_id,
+        .program_id = &id,
         .accounts = &[_]sol.Account.Param{
             .{ .id = account.id, .is_writable = true, .is_signer = false },
             .{ .id = params.mint.id, .is_writable = false, .is_signer = false },
@@ -609,7 +610,7 @@ pub fn initializeAccount(account: sol.Account.Info, params: struct {
     try instruction.invokeSigned(&.{ account, params.mint, params.owner, params.rent }, params.seeds);
 }
 
-pub fn transfer(params: struct {
+pub fn transfer(allocator: std.mem.Allocator, params: struct {
     from: sol.Account.Info,
     to: sol.Account.Info,
     amount: u64,
@@ -619,13 +620,13 @@ pub fn transfer(params: struct {
     },
     seeds: []const []const []const u8 = &.{},
 }) !void {
-    const data = try bincode.writeAlloc(sol.allocator, Instruction{
+    const data = try bincode.writeAlloc(allocator, TokenProgram.Instruction{
         .transfer = .{ .amount = params.amount },
     }, .{});
-    defer sol.allocator.free(data);
+    defer allocator.free(data);
 
     const instruction = sol.Instruction.from(.{
-        .program_id = &program_id,
+        .program_id = &id,
         .accounts = &[_]sol.Account.Param{
             .{ .id = params.from.id, .is_writable = true, .is_signer = false },
             .{ .id = params.to.id, .is_writable = true, .is_signer = false },
@@ -637,7 +638,7 @@ pub fn transfer(params: struct {
     try instruction.invokeSigned(&.{ params.from, params.to, params.authority.single }, params.seeds);
 }
 
-pub fn setAuthority(mint_or_account: sol.Account.Info, params: struct {
+pub fn setAuthority(allocator: std.mem.Allocator, mint_or_account: sol.Account.Info, params: struct {
     authority: union(enum) {
         single: sol.Account.Info,
         multiple: []const sol.Account.Info,
@@ -646,16 +647,16 @@ pub fn setAuthority(mint_or_account: sol.Account.Info, params: struct {
     new_authority_id: ?sol.PublicKey,
     seeds: []const []const []const u8 = &.{},
 }) !void {
-    const data = try bincode.writeAlloc(sol.allocator, Instruction{
+    const data = try bincode.writeAlloc(allocator, TokenProgram.Instruction{
         .set_authority = .{
             .authority_type = params.authority_type,
             .new_authority_id = params.new_authority_id,
         },
     }, .{});
-    defer sol.allocator.free(data);
+    defer allocator.free(data);
 
     const instruction = sol.Instruction.from(.{
-        .program_id = &program_id,
+        .program_id = &id,
         .accounts = &[_]sol.Account.Param{
             .{ .id = mint_or_account.id, .is_writable = true, .is_signer = false },
             .{ .id = params.authority.single.id, .is_writable = false, .is_signer = true },
@@ -666,7 +667,7 @@ pub fn setAuthority(mint_or_account: sol.Account.Info, params: struct {
     try instruction.invokeSigned(&.{ mint_or_account, params.authority.single }, params.seeds);
 }
 
-pub fn burn(params: struct {
+pub fn burn(allocator: std.mem.Allocator, params: struct {
     account: sol.Account.Info,
     mint: sol.Account.Info,
     authority: union(enum) {
@@ -676,15 +677,15 @@ pub fn burn(params: struct {
     amount: u64,
     seeds: []const []const []const u8 = &.{},
 }) !void {
-    const data = try bincode.writeAlloc(sol.allocator, Instruction{
+    const data = try bincode.writeAlloc(allocator, TokenProgram.Instruction{
         .burn = .{
             .amount = params.amount,
         },
     }, .{});
-    defer sol.allocator.free(data);
+    defer allocator.free(data);
 
     const instruction = sol.Instruction.from(.{
-        .program_id = &program_id,
+        .program_id = &id,
         .accounts = &[_]sol.Account.Param{
             .{ .id = params.account.id, .is_writable = true, .is_signer = false },
             .{ .id = params.mint.id, .is_writable = true, .is_signer = false },
@@ -696,7 +697,7 @@ pub fn burn(params: struct {
     try instruction.invokeSigned(&.{ params.account, params.mint, params.authority.single }, params.seeds);
 }
 
-pub fn mintTo(params: struct {
+pub fn mintTo(allocator: std.mem.Allocator, params: struct {
     mint: sol.Account.Info,
     account: sol.Account.Info,
     amount: u64,
@@ -706,15 +707,15 @@ pub fn mintTo(params: struct {
     },
     seeds: []const []const []const u8 = &.{},
 }) !void {
-    const data = try bincode.writeAlloc(sol.allocator, Instruction{
+    const data = try bincode.writeAlloc(allocator, TokenProgram.Instruction{
         .mint_to = .{
             .amount = params.amount,
         },
     }, .{});
-    defer sol.allocator.free(data);
+    defer allocator.free(data);
 
     const instruction = sol.Instruction.from(.{
-        .program_id = &program_id,
+        .program_id = &id,
         .accounts = &[_]sol.Account.Param{
             .{ .id = params.mint.id, .is_writable = true, .is_signer = false },
             .{ .id = params.account.id, .is_writable = true, .is_signer = false },
@@ -726,16 +727,16 @@ pub fn mintTo(params: struct {
     try instruction.invokeSigned(&.{ params.mint, params.account, params.mint_authority.single }, params.seeds);
 }
 
-pub fn closeAccount(account: sol.Account.Info, params: struct {
+pub fn closeAccount(allocator: std.mem.Allocator, account: sol.Account.Info, params: struct {
     account_to_receive_remaining_tokens: sol.Account.Info,
     owner: sol.Account.Info,
     seeds: []const []const []const u8 = &.{},
 }) !void {
-    const data = try bincode.writeAlloc(sol.allocator, Instruction.close_account, .{});
-    defer sol.allocator.free(data);
+    const data = try bincode.writeAlloc(allocator, Instruction.close_account, .{});
+    defer allocator.free(data);
 
     const instruction = sol.Instruction.from(.{
-        .program_id = &program_id,
+        .program_id = &id,
         .accounts = &[_]sol.Account.Param{
             .{ .id = account.id, .is_writable = true, .is_signer = false },
             .{ .id = params.account_to_receive_remaining_tokens.id, .is_writable = true, .is_signer = false },
@@ -747,7 +748,7 @@ pub fn closeAccount(account: sol.Account.Info, params: struct {
     try instruction.invokeSigned(&.{ account, params.account_to_receive_remaining_tokens, params.owner }, params.seeds);
 }
 
-pub fn freezeAccount(account: sol.Account.Info, params: struct {
+pub fn freezeAccount(allocator: std.mem.Allocator, account: sol.Account.Info, params: struct {
     mint: sol.Account.Info,
     freeze_authority: union(enum) {
         single: sol.Account.Info,
@@ -755,11 +756,11 @@ pub fn freezeAccount(account: sol.Account.Info, params: struct {
     },
     seeds: []const []const []const u8 = &.{},
 }) !void {
-    const data = try bincode.writeAlloc(sol.allocator, Instruction.freeze_account, .{});
-    defer sol.allocator.free(data);
+    const data = try bincode.writeAlloc(allocator, Instruction.freeze_account, .{});
+    defer allocator.free(data);
 
     const instruction = sol.Instruction.from(.{
-        .program_id = &program_id,
+        .program_id = &id,
         .accounts = &[_]sol.Account.Param{
             .{ .id = account.id, .is_writable = true, .is_signer = false },
             .{ .id = params.mint.id, .is_writable = false, .is_signer = false },
