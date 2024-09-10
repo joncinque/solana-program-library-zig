@@ -2,7 +2,8 @@ const std = @import("std");
 const bincode = @import("bincode");
 const sol = @import("solana-program-sdk");
 
-pub const program_id = sol.PublicKey.comptimeFromBase58("ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL");
+const AssociatedTokenAccountProgram = @This();
+pub const id = sol.PublicKey.comptimeFromBase58("ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL");
 
 pub const Instruction = union(enum(u8)) {
     /// Creates an associated token account for the given wallet address and token mint
@@ -53,10 +54,10 @@ pub fn getAssociatedTokenAccountAddressWithProgramId(wallet_address: sol.PublicK
 }
 
 pub fn getAssociatedTokenAccountAddressAndBumpSeed(wallet_address: sol.PublicKey, mint_address: sol.PublicKey, token_program_id: sol.PublicKey) !sol.ProgramDerivedAddress {
-    return sol.PublicKey.findProgramAddress(.{ wallet_address, token_program_id, mint_address }, program_id);
+    return sol.PublicKey.findProgramAddress(.{ wallet_address, token_program_id, mint_address }, id);
 }
 
-pub fn createAccount(account: sol.Account.Info, params: struct {
+pub fn createAccount(allocator: std.mem.Allocator, account: sol.Account.Info, params: struct {
     funder: sol.Account.Info,
     owner: sol.Account.Info,
     mint: sol.Account.Info,
@@ -65,11 +66,11 @@ pub fn createAccount(account: sol.Account.Info, params: struct {
     rent: sol.Account.Info,
     seeds: []const []const []const u8 = &.{},
 }) !void {
-    const data = try bincode.writeAlloc(sol.allocator, Instruction.create, .{});
-    defer sol.allocator.free(data);
+    const data = try bincode.writeAlloc(allocator, AssociatedTokenAccountProgram.Instruction.create, .{});
+    defer allocator.free(data);
 
     const instruction = sol.Instruction.from(.{
-        .program_id = &program_id,
+        .program_id = &id,
         .accounts = &[_]sol.Account.Param{
             .{ .id = params.funder.id, .is_writable = true, .is_signer = true },
             .{ .id = account.id, .is_writable = true, .is_signer = false },
@@ -93,7 +94,7 @@ pub fn createAccount(account: sol.Account.Info, params: struct {
     }, params.seeds);
 }
 
-pub fn createIdempotentAccount(account: sol.Account.Info, params: struct {
+pub fn createIdempotentAccount(allocator: std.mem.Allocator, account: sol.Account.Info, params: struct {
     funder: sol.Account.Info,
     owner: sol.Account.Info,
     mint: sol.Account.Info,
@@ -102,11 +103,11 @@ pub fn createIdempotentAccount(account: sol.Account.Info, params: struct {
     associated_token_program: sol.Account.Info,
     seeds: []const []const []const u8 = &.{},
 }) !void {
-    const data = try bincode.writeAlloc(sol.allocator, Instruction.create_idempotent, .{});
-    defer sol.allocator.free(data);
+    const data = try bincode.writeAlloc(allocator, AssociatedTokenAccountProgram.Instruction.create_idempotent, .{});
+    defer allocator.free(data);
 
     const instruction = sol.Instruction.from(.{
-        .program_id = &program_id,
+        .program_id = &id,
         .accounts = &[_]sol.Account.Param{
             .{ .id = params.funder.id, .is_writable = true, .is_signer = true },
             .{ .id = account.id, .is_writable = true, .is_signer = false },
@@ -124,6 +125,46 @@ pub fn createIdempotentAccount(account: sol.Account.Info, params: struct {
         params.owner,
         params.mint,
         params.system_program,
+        params.token_program,
+        params.associated_token_program,
+    }, params.seeds);
+}
+
+pub fn recoverNestedAccount(allocator: std.mem.Allocator, params: struct {
+    account: sol.Account.Info,
+    nested_mint: sol.Account.Info,
+    destination_associated_account: sol.Account.Info,
+    owner_associated_account: sol.Account.Info,
+    owner_mint: sol.Account.Info,
+    owner: sol.Account.Info,
+    token_program: sol.Account.Info,
+    associated_token_program: sol.Account.Info,
+    seeds: []const []const []const u8 = &.{},
+}) !void {
+    const data = try bincode.writeAlloc(allocator, AssociatedTokenAccountProgram.Instruction.recover_nested, .{});
+    defer allocator.free(data);
+
+    const instruction = sol.Instruction.from(.{
+        .program_id = &id,
+        .accounts = &[_]sol.Account.Param{
+            .{ .id = params.account.id, .is_writable = true, .is_signer = false },
+            .{ .id = params.nested_mint.id, .is_writable = false, .is_signer = false },
+            .{ .id = params.destination_associated_account.id, .is_writable = true, .is_signer = false },
+            .{ .id = params.owner_associated_account.id, .is_writable = false, .is_signer = false },
+            .{ .id = params.owner_mint.id, .is_writable = false, .is_signer = false },
+            .{ .id = params.owner.id, .is_writable = true, .is_signer = true },
+            .{ .id = params.token_program.id, .is_writable = false, .is_signer = false },
+        },
+        .data = data,
+    });
+
+    try instruction.invokeSigned(&.{
+        params.account,
+        params.nested_mint,
+        params.destination_associated_account,
+        params.owner_associated_account,
+        params.owner_mint,
+        params.owner,
         params.token_program,
         params.associated_token_program,
     }, params.seeds);

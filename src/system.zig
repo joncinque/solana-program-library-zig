@@ -3,14 +3,12 @@ const bincode = @import("bincode");
 const sol = @import("solana-program-sdk");
 
 const Account = sol.Account;
-const allocator = sol.allocator;
-const ix = sol.instruction;
 const PublicKey = sol.PublicKey;
 
 const SystemProgram = @This();
 pub const id = PublicKey.comptimeFromBase58("11111111111111111111111111111111");
 
-pub fn createAccount(account: Account.Info, params: struct {
+pub fn createAccount(allocator: std.mem.Allocator, account: Account.Info, params: struct {
     payer: Account.Info,
     lamports: u64,
     space: u64,
@@ -26,7 +24,7 @@ pub fn createAccount(account: Account.Info, params: struct {
     }, .{});
     defer allocator.free(data);
 
-    const instruction = ix.Instruction.from(.{
+    const instruction = sol.Instruction.from(.{
         .program_id = &id,
         .accounts = &[_]Account.Param{
             .{ .id = params.payer.id, .is_writable = true, .is_signer = true },
@@ -38,7 +36,7 @@ pub fn createAccount(account: Account.Info, params: struct {
     try instruction.invokeSigned(&.{ params.payer, account }, params.seeds);
 }
 
-pub fn transfer(params: struct {
+pub fn transfer(allocator: std.mem.Allocator, params: struct {
     from: Account.Info,
     to: Account.Info,
     lamports: u64,
@@ -49,7 +47,7 @@ pub fn transfer(params: struct {
     }, .{});
     defer allocator.free(data);
 
-    const instruction = ix.Instruction.from(.{
+    const instruction = sol.Instruction.from(.{
         .program_id = &id,
         .accounts = &[_]Account.Param{
             .{ .id = params.from.id, .is_writable = true, .is_signer = true },
@@ -61,7 +59,7 @@ pub fn transfer(params: struct {
     try instruction.invokeSigned(&.{ params.from, params.to }, params.seeds);
 }
 
-pub fn allocate(account: Account.Info, space: u64, params: struct {
+pub fn allocate(allocator: std.mem.Allocator, account: Account.Info, space: u64, params: struct {
     seeds: []const []const []const u8 = &.{},
 }) !void {
     const data = try bincode.writeAlloc(allocator, SystemProgram.Instruction{
@@ -69,7 +67,7 @@ pub fn allocate(account: Account.Info, space: u64, params: struct {
     }, .{});
     defer allocator.free(data);
 
-    const instruction = ix.Instruction.from(.{
+    const instruction = sol.Instruction.from(.{
         .program_id = &id,
         .accounts = &[_]Account.Param{
             .{ .id = account.id, .is_writable = true, .is_signer = true },
@@ -80,7 +78,7 @@ pub fn allocate(account: Account.Info, space: u64, params: struct {
     try instruction.invokeSigned(&.{account}, params.seeds);
 }
 
-pub fn assign(account: Account.Info, owner_id: PublicKey, params: struct {
+pub fn assign(allocator: std.mem.Allocator, account: Account.Info, owner_id: PublicKey, params: struct {
     seeds: []const []const []const u8 = &.{},
 }) !void {
     const data = try bincode.writeAlloc(allocator, SystemProgram.Instruction{
@@ -88,7 +86,7 @@ pub fn assign(account: Account.Info, owner_id: PublicKey, params: struct {
     }, .{});
     defer allocator.free(data);
 
-    const instruction = ix.Instruction.from(.{
+    const instruction = sol.Instruction.from(.{
         .program_id = &id,
         .accounts = &[_]Account.Param{
             .{ .id = account.id, .is_writable = true, .is_signer = true },
