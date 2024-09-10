@@ -2,7 +2,7 @@ const std = @import("std");
 const bincode = @import("bincode");
 const sol = @import("solana-program-sdk");
 
-const AssociatedTokenProgram = @This();
+const AssociatedTokenAccountProgram = @This();
 pub const id = sol.PublicKey.comptimeFromBase58("ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL");
 
 pub const Instruction = union(enum(u8)) {
@@ -66,7 +66,7 @@ pub fn createAccount(allocator: std.mem.Allocator, account: sol.Account.Info, pa
     rent: sol.Account.Info,
     seeds: []const []const []const u8 = &.{},
 }) !void {
-    const data = try bincode.writeAlloc(allocator, AssociatedTokenProgram.Instruction.create, .{});
+    const data = try bincode.writeAlloc(allocator, AssociatedTokenAccountProgram.Instruction.create, .{});
     defer allocator.free(data);
 
     const instruction = sol.Instruction.from(.{
@@ -103,7 +103,7 @@ pub fn createIdempotentAccount(allocator: std.mem.Allocator, account: sol.Accoun
     associated_token_program: sol.Account.Info,
     seeds: []const []const []const u8 = &.{},
 }) !void {
-    const data = try bincode.writeAlloc(allocator, AssociatedTokenProgram.Instruction.create_idempotent, .{});
+    const data = try bincode.writeAlloc(allocator, AssociatedTokenAccountProgram.Instruction.create_idempotent, .{});
     defer allocator.free(data);
 
     const instruction = sol.Instruction.from(.{
@@ -130,7 +130,8 @@ pub fn createIdempotentAccount(allocator: std.mem.Allocator, account: sol.Accoun
     }, params.seeds);
 }
 
-pub fn recoverNestedAccount(allocator: std.mem.Allocator, account: sol.Account.Info, params: struct {
+pub fn recoverNestedAccount(allocator: std.mem.Allocator, params: struct {
+    account: sol.Account.Info,
     nested_mint: sol.Account.Info,
     destination_associated_account: sol.Account.Info,
     owner_associated_account: sol.Account.Info,
@@ -140,7 +141,7 @@ pub fn recoverNestedAccount(allocator: std.mem.Allocator, account: sol.Account.I
     associated_token_program: sol.Account.Info,
     seeds: []const []const []const u8 = &.{},
 }) !void {
-    const data = try bincode.writeAlloc(allocator, AssociatedTokenProgram.Instruction.recover_nested, .{});
+    const data = try bincode.writeAlloc(allocator, AssociatedTokenAccountProgram.Instruction.recover_nested, .{});
     defer allocator.free(data);
 
     const instruction = sol.Instruction.from(.{
@@ -158,7 +159,7 @@ pub fn recoverNestedAccount(allocator: std.mem.Allocator, account: sol.Account.I
     });
 
     try instruction.invokeSigned(&.{
-        account,
+        params.account,
         params.nested_mint,
         params.destination_associated_account,
         params.owner_associated_account,
