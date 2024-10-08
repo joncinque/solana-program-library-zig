@@ -15,6 +15,14 @@ pub fn build(b: *std.Build) void {
     // set a preferred release mode, allowing the user to decide how to optimize.
     const optimize = b.standardOptimizeOption(.{});
 
+    const dep_opts = .{ .target = target, .optimize = optimize };
+    // Export self as a module
+    const sol_lib_mod = b.addModule("solana-program-library", .{
+        .root_source_file = b.path("src/root.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+
     const lib = b.addStaticLibrary(.{
         .name = "solana-program-library",
         // In this case the main source file is merely a path, however, in more
@@ -25,20 +33,15 @@ pub fn build(b: *std.Build) void {
     });
 
     // Maybe make this better -- we need to add solana's dependency to it too
-    const base58_dep = b.dependency("base58", .{
-        .target = target,
-        .optimize = optimize,
-    });
+    const base58_dep = b.dependency("base58", dep_opts);
     const base58_mod = base58_dep.module("base58");
 
     // Adding it as a module
-    const solana_dep = b.dependency("solana-program-sdk", .{
-        .target = target,
-        .optimize = optimize,
-    });
+    const solana_dep = b.dependency("solana-program-sdk", dep_opts);
     const solana_mod = solana_dep.module("solana-program-sdk");
     solana_mod.addImport("base58", base58_mod);
     lib.root_module.addImport("solana-program-sdk", solana_mod);
+    sol_lib_mod.addImport("solana-program-sdk", solana_mod);
 
     const bincode_dep = b.dependency("bincode", .{
         .target = target,
@@ -46,6 +49,7 @@ pub fn build(b: *std.Build) void {
     });
     const bincode_mod = bincode_dep.module("bincode");
     lib.root_module.addImport("bincode", bincode_mod);
+    sol_lib_mod.addImport("bincode", bincode_mod);
 
     // This declares intent for the library to be installed into the standard
     // location when the user invokes the "install" step (the default step when
