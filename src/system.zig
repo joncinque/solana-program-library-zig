@@ -8,44 +8,45 @@ const PublicKey = sol.PublicKey;
 const SystemProgram = @This();
 pub const id = PublicKey.comptimeFromBase58("11111111111111111111111111111111");
 
-pub fn createAccount(allocator: std.mem.Allocator, account: Account.Info, params: struct {
-    payer: Account.Info,
+pub fn createAccount(params: struct {
+    from: Account.Info,
+    to: Account.Info,
     lamports: u64,
     space: u64,
     owner_id: PublicKey,
     seeds: []const []const []const u8 = &.{},
 }) !void {
-    const data = try bincode.writeAlloc(allocator, SystemProgram.Instruction{
+    var data: [52]u8 = undefined;
+    _ = try bincode.writeToSlice(&data, SystemProgram.Instruction{
         .create_account = .{
             .lamports = params.lamports,
             .space = params.space,
             .owner_id = params.owner_id,
         },
     }, .{});
-    defer allocator.free(data);
 
     const instruction = sol.Instruction.from(.{
         .program_id = &id,
         .accounts = &[_]Account.Param{
-            .{ .id = params.payer.id, .is_writable = true, .is_signer = true },
-            .{ .id = account.id, .is_writable = true, .is_signer = true },
+            .{ .id = params.from.id, .is_writable = true, .is_signer = true },
+            .{ .id = params.to.id, .is_writable = true, .is_signer = true },
         },
-        .data = data,
+        .data = &data,
     });
 
-    try instruction.invokeSigned(&.{ params.payer, account }, params.seeds);
+    try instruction.invokeSigned(&.{ params.from, params.to }, params.seeds);
 }
 
-pub fn transfer(allocator: std.mem.Allocator, params: struct {
+pub fn transfer(params: struct {
     from: Account.Info,
     to: Account.Info,
     lamports: u64,
     seeds: []const []const []const u8 = &.{},
 }) !void {
-    const data = try bincode.writeAlloc(allocator, SystemProgram.Instruction{
+    var data: [12]u8 = undefined;
+    _ = try bincode.writeToSlice(&data, SystemProgram.Instruction{
         .transfer = .{ .lamports = params.lamports },
     }, .{});
-    defer allocator.free(data);
 
     const instruction = sol.Instruction.from(.{
         .program_id = &id,
@@ -53,48 +54,52 @@ pub fn transfer(allocator: std.mem.Allocator, params: struct {
             .{ .id = params.from.id, .is_writable = true, .is_signer = true },
             .{ .id = params.to.id, .is_writable = true, .is_signer = false },
         },
-        .data = data,
+        .data = &data,
     });
 
     try instruction.invokeSigned(&.{ params.from, params.to }, params.seeds);
 }
 
-pub fn allocate(allocator: std.mem.Allocator, account: Account.Info, space: u64, params: struct {
+pub fn allocate(params: struct {
+    account: Account.Info,
+    space: u64,
     seeds: []const []const []const u8 = &.{},
 }) !void {
-    const data = try bincode.writeAlloc(allocator, SystemProgram.Instruction{
-        .allocate = .{ .space = space },
+    var data: [12]u8 = undefined;
+    _ = try bincode.writeToSlice(&data, SystemProgram.Instruction{
+        .allocate = .{ .space = params.space },
     }, .{});
-    defer allocator.free(data);
 
     const instruction = sol.Instruction.from(.{
         .program_id = &id,
         .accounts = &[_]Account.Param{
-            .{ .id = account.id, .is_writable = true, .is_signer = true },
+            .{ .id = params.account.id, .is_writable = true, .is_signer = true },
         },
-        .data = data,
+        .data = &data,
     });
 
-    try instruction.invokeSigned(&.{account}, params.seeds);
+    try instruction.invokeSigned(&.{params.account}, params.seeds);
 }
 
-pub fn assign(allocator: std.mem.Allocator, account: Account.Info, owner_id: PublicKey, params: struct {
+pub fn assign(params: struct {
+    account: Account.Info,
+    owner_id: PublicKey,
     seeds: []const []const []const u8 = &.{},
 }) !void {
-    const data = try bincode.writeAlloc(allocator, SystemProgram.Instruction{
-        .assign = .{ .owner_id = owner_id },
+    var data: [36]u8 = undefined;
+    _ = try bincode.writeToSlice(&data, SystemProgram.Instruction{
+        .assign = .{ .owner_id = params.owner_id },
     }, .{});
-    defer allocator.free(data);
 
     const instruction = sol.Instruction.from(.{
         .program_id = &id,
         .accounts = &[_]Account.Param{
-            .{ .id = account.id, .is_writable = true, .is_signer = true },
+            .{ .id = params.account.id, .is_writable = true, .is_signer = true },
         },
-        .data = data,
+        .data = &data,
     });
 
-    try instruction.invokeSigned(&.{account}, params.seeds);
+    try instruction.invokeSigned(&.{params.account}, params.seeds);
 }
 
 pub const Instruction = union(enum(u32)) {
