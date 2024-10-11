@@ -32,14 +32,9 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
     });
 
-    // Maybe make this better -- we need to add solana's dependency to it too
-    const base58_dep = b.dependency("base58", dep_opts);
-    const base58_mod = base58_dep.module("base58");
-
     // Adding it as a module
     const solana_dep = b.dependency("solana-program-sdk", dep_opts);
     const solana_mod = solana_dep.module("solana-program-sdk");
-    solana_mod.addImport("base58", base58_mod);
     lib.root_module.addImport("solana-program-sdk", solana_mod);
     sol_lib_mod.addImport("solana-program-sdk", solana_mod);
 
