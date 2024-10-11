@@ -57,8 +57,9 @@ pub fn getAssociatedTokenAccountAddressAndBumpSeed(wallet_address: sol.PublicKey
     return sol.PublicKey.findProgramAddress(.{ wallet_address, token_program_id, mint_address }, id);
 }
 
-pub fn createAccount(allocator: std.mem.Allocator, account: sol.Account.Info, params: struct {
+pub fn createAccount(params: struct {
     funder: sol.Account.Info,
+    account: sol.Account.Info,
     owner: sol.Account.Info,
     mint: sol.Account.Info,
     system_program: sol.Account.Info,
@@ -66,26 +67,26 @@ pub fn createAccount(allocator: std.mem.Allocator, account: sol.Account.Info, pa
     rent: sol.Account.Info,
     seeds: []const []const []const u8 = &.{},
 }) !void {
-    const data = try bincode.writeAlloc(allocator, AssociatedTokenAccountProgram.Instruction.create, .{});
-    defer allocator.free(data);
+    var data: [1]u8 = undefined;
+    _ = try bincode.writeToSlice(&data, AssociatedTokenAccountProgram.Instruction.create, .{});
 
     const instruction = sol.Instruction.from(.{
         .program_id = &id,
         .accounts = &[_]sol.Account.Param{
             .{ .id = params.funder.id, .is_writable = true, .is_signer = true },
-            .{ .id = account.id, .is_writable = true, .is_signer = false },
+            .{ .id = params.account.id, .is_writable = true, .is_signer = false },
             .{ .id = params.owner.id, .is_writable = false, .is_signer = false },
             .{ .id = params.mint.id, .is_writable = false, .is_signer = false },
             .{ .id = params.system_program.id, .is_writable = false, .is_signer = false },
             .{ .id = params.token_program.id, .is_writable = false, .is_signer = false },
             .{ .id = params.rent.id, .is_writable = false, .is_signer = false },
         },
-        .data = data,
+        .data = &data,
     });
 
     try instruction.invokeSigned(&.{
         params.funder,
-        account,
+        params.account,
         params.owner,
         params.mint,
         params.system_program,
@@ -94,8 +95,9 @@ pub fn createAccount(allocator: std.mem.Allocator, account: sol.Account.Info, pa
     }, params.seeds);
 }
 
-pub fn createIdempotentAccount(allocator: std.mem.Allocator, account: sol.Account.Info, params: struct {
+pub fn createIdempotentAccount(params: struct {
     funder: sol.Account.Info,
+    account: sol.Account.Info,
     owner: sol.Account.Info,
     mint: sol.Account.Info,
     system_program: sol.Account.Info,
@@ -103,25 +105,25 @@ pub fn createIdempotentAccount(allocator: std.mem.Allocator, account: sol.Accoun
     associated_token_program: sol.Account.Info,
     seeds: []const []const []const u8 = &.{},
 }) !void {
-    const data = try bincode.writeAlloc(allocator, AssociatedTokenAccountProgram.Instruction.create_idempotent, .{});
-    defer allocator.free(data);
+    var data: [1]u8 = undefined;
+    _ = try bincode.writeToSlice(&data, AssociatedTokenAccountProgram.Instruction.create_idempotent, .{});
 
     const instruction = sol.Instruction.from(.{
         .program_id = &id,
         .accounts = &[_]sol.Account.Param{
             .{ .id = params.funder.id, .is_writable = true, .is_signer = true },
-            .{ .id = account.id, .is_writable = true, .is_signer = false },
+            .{ .id = params.account.id, .is_writable = true, .is_signer = false },
             .{ .id = params.owner.id, .is_writable = false, .is_signer = false },
             .{ .id = params.mint.id, .is_writable = false, .is_signer = false },
             .{ .id = params.system_program.id, .is_writable = false, .is_signer = false },
             .{ .id = params.token_program.id, .is_writable = false, .is_signer = false },
         },
-        .data = data,
+        .data = &data,
     });
 
     try instruction.invokeSigned(&.{
         params.funder,
-        account,
+        params.account,
         params.owner,
         params.mint,
         params.system_program,
@@ -130,7 +132,7 @@ pub fn createIdempotentAccount(allocator: std.mem.Allocator, account: sol.Accoun
     }, params.seeds);
 }
 
-pub fn recoverNestedAccount(allocator: std.mem.Allocator, params: struct {
+pub fn recoverNestedAccount(params: struct {
     account: sol.Account.Info,
     nested_mint: sol.Account.Info,
     destination_associated_account: sol.Account.Info,
@@ -141,8 +143,8 @@ pub fn recoverNestedAccount(allocator: std.mem.Allocator, params: struct {
     associated_token_program: sol.Account.Info,
     seeds: []const []const []const u8 = &.{},
 }) !void {
-    const data = try bincode.writeAlloc(allocator, AssociatedTokenAccountProgram.Instruction.recover_nested, .{});
-    defer allocator.free(data);
+    var data: [1]u8 = undefined;
+    _ = try bincode.writeToSlice(&data, AssociatedTokenAccountProgram.Instruction.recover_nested, .{});
 
     const instruction = sol.Instruction.from(.{
         .program_id = &id,
@@ -155,7 +157,7 @@ pub fn recoverNestedAccount(allocator: std.mem.Allocator, params: struct {
             .{ .id = params.owner.id, .is_writable = true, .is_signer = true },
             .{ .id = params.token_program.id, .is_writable = false, .is_signer = false },
         },
-        .data = data,
+        .data = &data,
     });
 
     try instruction.invokeSigned(&.{
