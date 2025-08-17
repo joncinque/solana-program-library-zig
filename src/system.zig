@@ -1,5 +1,4 @@
 const std = @import("std");
-const bincode = @import("bincode");
 const sol = @import("solana_program_sdk");
 
 const Account = sol.account.Account;
@@ -60,22 +59,31 @@ pub fn transfer(params: struct {
     try instruction.invokeSigned(&.{ params.from, params.to }, params.seeds);
 }
 
+fn InstructionData(comptime Discriminant: type, comptime Data: type) type {
+    return packed struct {
+        discriminant: Discriminant,
+        data: Data,
+        const Self = @This();
+        fn asBytes(self: *const Self) []const u8 {
+            return std.mem.asBytes(self)[0..(@sizeOf(Discriminant) + @sizeOf(Data))];
+        }
+    };
+}
+
 pub fn allocate(params: struct {
     account: Account.Info,
     space: u64,
     seeds: []const []const []const u8 = &.{},
 }) !void {
-    var data: [12]u8 = undefined;
-    _ = try bincode.writeToSlice(&data, SystemProgram.Instruction{
-        .allocate = .{ .space = params.space },
-    }, .default);
+    const InstructionType = InstructionData(InstructionDiscriminant, AllocateData);
+    const data = InstructionType { .discriminant = InstructionDiscriminant.allocate, .data = .{ .space = params.space } };
 
     const instruction = sol.instruction.Instruction.from(.{
         .program_id = &id,
         .accounts = &[_]Account.Param{
             .{ .id = params.account.id, .is_writable = true, .is_signer = true },
         },
-        .data = &data,
+        .data = data.asBytes(),
     });
 
     try instruction.invokeSigned(&.{params.account}, params.seeds);
@@ -102,36 +110,63 @@ pub fn assign(params: struct {
     try instruction.invokeSigned(&.{params.account}, params.seeds);
 }
 
-pub const Instruction = union(enum(u32)) {
+pub const InstructionDiscriminant = enum(u32) {
+    create_account,
+    assign,
+    transfer,
+    create_account_with_seed,
+    advance_nonce_account,
+    withdraw_nonce_account,
+    initialize_nonce_account,
+    authorize_nonce_account,
+    allocate,
+    allocate_with_seed,
+    assign_with_seed,
+    transfer_with_seed,
+};
+
+const CreateAccountData = extern struct {
+    /// Number of lamports to transfer to the new account
+    lamports: u64 align(1),
+    /// Number of bytes of memory to allocate
+    space: u64 align(1),
+    /// Address of program that will own the new account
+    owner_id: PublicKey align(1),
+};
+
+const AssignData = extern struct {
+    /// Owner program account
+    owner_id: PublicKey align(1),
+};
+
+const AllocateData = packed struct {
+    /// Number of bytes of memory to allocate
+    space: u64,
+};
+
+const TransferData = extern struct {
+    /// Number of lamports to transfer
+    lamports: u64 align(1),
+};
+
+pub const Instruction = union(InstructionDiscriminant) {
     /// Create a new account
     ///
     /// # Account references
     ///   0. `[WRITE, SIGNER]` Funding account
     ///   1. `[WRITE, SIGNER]` New account
-    create_account: struct {
-        /// Number of lamports to transfer to the new account
-        lamports: u64,
-        /// Number of bytes of memory to allocate
-        space: u64,
-        /// Address of program that will own the new account
-        owner_id: PublicKey,
-    },
+    create_account: CreateAccountData,
     /// Assign account to a program
     ///
     /// # Account references
     ///   0. `[WRITE, SIGNER]` Assigned account public key
-    assign: struct {
-        /// Owner program account
-        owner_id: PublicKey,
-    },
+    assign: AssignData,
     /// Transfer lamports
     ///
     /// # Account references
     ///   0. `[WRITE, SIGNER]` Funding account
     ///   1. `[WRITE]` Recipient account
-    transfer: struct {
-        lamports: u64,
-    },
+    transfer: TransferData,
     /// Create a new account at an address derived from a base public key and a seed
     ///
     /// # Account references
@@ -196,10 +231,7 @@ pub const Instruction = union(enum(u32)) {
     ///
     /// # Account references
     ///   0. `[WRITE, SIGNER]` New account
-    allocate: struct {
-        /// Number of bytes of memory to allocate
-        space: u64,
-    },
+    allocate: AllocateData,
     /// Allocate space for and assign an account at an address
     ///    derived from a base public key and a seed
     ///
@@ -267,4 +299,11 @@ test "SystemProgram.Instruction: serialize and deserialize" {
             writer.clearRetainingCapacity();
         }
     }
+}
+
+test "SystemProgram.Instruction: pointer cast" {
+    const InstructionType = InstructionData(InstructionDiscriminant, AllocateData);
+    const data = InstructionType { .discriminant = InstructionDiscriminant.allocate, .data = .{ .space = 42 } };
+    const buffer = [_]u8{ 8, 0, 0, 0, 42, 0, 0, 0, 0, 0, 0, 0};
+    try std.testing.expectEqualSlices(u8, data.asBytes(), &buffer);
 }
