@@ -1,5 +1,5 @@
 const std = @import("std");
-const sol = @import("solana-program-sdk");
+const sol = @import("solana_program_sdk");
 const bincode = @import("bincode");
 
 const TokenProgram = @This();
@@ -29,7 +29,7 @@ pub const Error = error{
 };
 
 pub fn getErrorFromCode(code: u32) (Error || error{Unknown})!void {
-    inline for (@typeInfo(Error).ErrorSet.?, 0..) |err, i| {
+    inline for (@typeInfo(Error).error_set.?, 0..) |err, i| {
         if (i == code) {
             return @field(Error, err.name);
         }
@@ -507,11 +507,11 @@ pub const Mint = struct {
     freeze_authority: bincode.Option(sol.PublicKey),
 
     pub fn decode(bytes: []const u8) !Mint {
-        return bincode.readFromSlice(undefined, Mint, bytes, .{});
+        return bincode.readFromSlice(undefined, Mint, bytes, .default);
     }
 
     pub fn writeTo(self: Mint, writer: anytype) !void {
-        return bincode.write(writer, self, .{});
+        return bincode.write(writer, self, .default);
     }
 };
 
@@ -534,11 +534,11 @@ pub const Account = struct {
     close_authority_id: bincode.Option(sol.PublicKey),
 
     pub fn decode(bytes: []const u8) !Account {
-        return bincode.readFromSlice(undefined, Account, bytes, .{});
+        return bincode.readFromSlice(undefined, Account, bytes, .default);
     }
 
     pub fn writeTo(self: Account, writer: anytype) !void {
-        return bincode.write(writer, self, .{});
+        return bincode.write(writer, self, .default);
     }
 };
 
@@ -574,7 +574,7 @@ pub fn initializeMint(params: struct {
             .mint_authority_id = params.mint_authority_id,
             .freeze_authority_id = params.freeze_authority_id,
         },
-    }, .{});
+    }, .default);
 
     const instruction = sol.Instruction.from(.{
         .program_id = &id,
@@ -596,7 +596,7 @@ pub fn initializeAccount(params: struct {
     seeds: []const []const []const u8 = &.{},
 }) !void {
     var data: [1]u8 = undefined;
-    _ = try bincode.writeToSlice(&data, TokenProgram.Instruction.initialize_account, .{});
+    _ = try bincode.writeToSlice(&data, TokenProgram.Instruction.initialize_account, .default);
 
     const instruction = sol.Instruction.from(.{
         .program_id = &id,
@@ -625,7 +625,7 @@ pub fn transfer(params: struct {
     var data: [9]u8 = undefined;
     _ = try bincode.writeToSlice(&data, TokenProgram.Instruction{
         .transfer = .{ .amount = params.amount },
-    }, .{});
+    }, .default);
 
     const instruction = sol.Instruction.from(.{
         .program_id = &id,
@@ -656,7 +656,7 @@ pub fn setAuthority(params: struct {
             .authority_type = params.authority_type,
             .new_authority_id = params.new_authority_id,
         },
-    }, .{});
+    }, .default);
 
     const instruction = sol.Instruction.from(.{
         .program_id = &id,
@@ -685,7 +685,7 @@ pub fn burn(params: struct {
         .burn = .{
             .amount = params.amount,
         },
-    }, .{});
+    }, .default);
 
     const instruction = sol.Instruction.from(.{
         .program_id = &id,
@@ -715,7 +715,7 @@ pub fn mintTo(params: struct {
         .mint_to = .{
             .amount = params.amount,
         },
-    }, .{});
+    }, .default);
 
     const instruction = sol.Instruction.from(.{
         .program_id = &id,
@@ -737,7 +737,7 @@ pub fn closeAccount(params: struct {
     seeds: []const []const []const u8 = &.{},
 }) !void {
     var data: [1]u8 = undefined;
-    _ = try bincode.writeToSlice(&data, TokenProgram.Instruction.close_account, .{});
+    _ = try bincode.writeToSlice(&data, TokenProgram.Instruction.close_account, .default);
 
     const instruction = sol.Instruction.from(.{
         .program_id = &id,
@@ -762,7 +762,7 @@ pub fn freezeAccount(params: struct {
     seeds: []const []const []const u8 = &.{},
 }) !void {
     var data: [1]u8 = undefined;
-    _ = try bincode.writeToSlice(&data, TokenProgram.Instruction.freeze_account, .{});
+    _ = try bincode.writeToSlice(&data, TokenProgram.Instruction.freeze_account, .default);
 
     const instruction = sol.Instruction.from(.{
         .program_id = &id,

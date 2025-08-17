@@ -1,6 +1,6 @@
 const std = @import("std");
 const bincode = @import("bincode");
-const sol = @import("solana-program-sdk");
+const sol = @import("solana_program_sdk");
 
 const AssociatedTokenAccountProgram = @This();
 pub const id = sol.PublicKey.comptimeFromBase58("ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL");
@@ -68,7 +68,7 @@ pub fn createAccount(params: struct {
     seeds: []const []const []const u8 = &.{},
 }) !void {
     var data: [1]u8 = undefined;
-    _ = try bincode.writeToSlice(&data, AssociatedTokenAccountProgram.Instruction.create, .{});
+    _ = try bincode.writeToSlice(&data, AssociatedTokenAccountProgram.Instruction.create, .default);
 
     const instruction = sol.Instruction.from(.{
         .program_id = &id,
@@ -106,7 +106,7 @@ pub fn createIdempotentAccount(params: struct {
     seeds: []const []const []const u8 = &.{},
 }) !void {
     var data: [1]u8 = undefined;
-    _ = try bincode.writeToSlice(&data, AssociatedTokenAccountProgram.Instruction.create_idempotent, .{});
+    _ = try bincode.writeToSlice(&data, AssociatedTokenAccountProgram.Instruction.create_idempotent, .default);
 
     const instruction = sol.Instruction.from(.{
         .program_id = &id,
@@ -144,7 +144,7 @@ pub fn recoverNestedAccount(params: struct {
     seeds: []const []const []const u8 = &.{},
 }) !void {
     var data: [1]u8 = undefined;
-    _ = try bincode.writeToSlice(&data, AssociatedTokenAccountProgram.Instruction.recover_nested, .{});
+    _ = try bincode.writeToSlice(&data, AssociatedTokenAccountProgram.Instruction.recover_nested, .default);
 
     const instruction = sol.Instruction.from(.{
         .program_id = &id,
