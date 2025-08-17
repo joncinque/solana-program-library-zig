@@ -1,6 +1,6 @@
 const std = @import("std");
 const bincode = @import("bincode");
-const sol = @import("solana-program-sdk");
+const sol = @import("solana_program_sdk");
 
 const Account = sol.Account;
 const PublicKey = sol.PublicKey;
@@ -23,7 +23,7 @@ pub fn createAccount(params: struct {
             .space = params.space,
             .owner_id = params.owner_id,
         },
-    }, .{});
+    }, .default);
 
     const instruction = sol.Instruction.from(.{
         .program_id = &id,
@@ -46,7 +46,7 @@ pub fn transfer(params: struct {
     var data: [12]u8 = undefined;
     _ = try bincode.writeToSlice(&data, SystemProgram.Instruction{
         .transfer = .{ .lamports = params.lamports },
-    }, .{});
+    }, .default);
 
     const instruction = sol.Instruction.from(.{
         .program_id = &id,
@@ -68,7 +68,7 @@ pub fn allocate(params: struct {
     var data: [12]u8 = undefined;
     _ = try bincode.writeToSlice(&data, SystemProgram.Instruction{
         .allocate = .{ .space = params.space },
-    }, .{});
+    }, .default);
 
     const instruction = sol.Instruction.from(.{
         .program_id = &id,
@@ -89,7 +89,7 @@ pub fn assign(params: struct {
     var data: [36]u8 = undefined;
     _ = try bincode.writeToSlice(&data, SystemProgram.Instruction{
         .assign = .{ .owner_id = params.owner_id },
-    }, .{});
+    }, .default);
 
     const instruction = sol.Instruction.from(.{
         .program_id = &id,
@@ -249,7 +249,7 @@ test "SystemProgram.Instruction: serialize and deserialize" {
     var buffer = std.ArrayList(u8).init(std.testing.allocator);
     defer buffer.deinit();
 
-    inline for (.{ .{}, bincode.Params.legacy, bincode.Params.standard }) |params| {
+    inline for (.{ bincode.Params.default, bincode.Params.legacy, bincode.Params.standard }) |params| {
         inline for (.{
             SystemProgram.Instruction{
                 .create_account = .{

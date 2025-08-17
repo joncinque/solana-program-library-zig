@@ -1,46 +1,22 @@
 .{
-    // This is the default name used by packages depending on this one. For
-    // example, when a user runs `zig fetch --save <url>`, this field is used
-    // as the key in the `dependencies` table. Although the user can choose a
-    // different name, most users will stick with this provided value.
-    //
-    // It is redundant to include "zig" in this name because it is already
-    // within the Zig package namespace.
-    .name = "solana-program-library",
+    .fingerprint = 0xa4b85d3595fe4ad7,
+    .name = .solana_program_library,
 
-    // This is a [Semantic Version](https://semver.org/).
-    // In a future version of Zig it will be used for package deduplication.
-    .version = "0.14.0",
+    .version = "0.15.0",
 
-    // This field is optional.
-    // This is currently advisory only; Zig does not yet do anything
-    // with this value.
-    .minimum_zig_version = "0.13.0",
+    .minimum_zig_version = "0.14.0",
 
-    // This field is optional.
-    // Each dependency must either provide a `url` and `hash`, or a `path`.
-    // `zig build --fetch` can be used to fetch all dependencies of a package, recursively.
-    // Once all dependencies are fetched, `zig build` no longer requires
-    // internet connectivity.
     .dependencies = .{
         .bincode = .{
-            .url = "https://github.com/joncinque/bincode-zig/archive/refs/tags/v0.13.0.tar.gz",
-            .hash = "12204503a7598b452f311534ba8f9d5dc158403d19a17be89eb7a04ba01a6ebb8b45",
+            .url = "https://github.com/joncinque/bincode-zig/archive/refs/tags/v0.14.0.tar.gz",
+            .hash = "bincode-0.14.0-LYspxE5uAABpwu-W95yJ9swZ3YhGkgbwaGwVjzNZGNXH",
         },
-        .@"solana-program-sdk" = .{
-            .url = "https://github.com/joncinque/solana-program-sdk-zig/archive/refs/tags/v0.14.0.tar.gz",
-            .hash = "1220bdfa4ea1ab6330959ce4bc40feb5b39a7f98923a266a94b69e27fd20c3526786",
+        .solana_program_sdk = .{
+            .url = "https://github.com/joncinque/solana-program-sdk-zig/archive/refs/tags/v0.16.0.tar.gz",
+            .hash = "solana_program_sdk-0.16.0-wGj9UFDgAAA31EfM9LV-cmDP5BctyNwEVvyEWtZ1QPkj",
         },
     },
 
-    // Specifies the set of files and directories that are included in this package.
-    // Only files and directories listed here are included in the `hash` that
-    // is computed for this package. Only files listed here will remain on disk
-    // when using the zig package manager. As a rule of thumb, one should list
-    // files required for compilation plus any license(s).
-    // Paths are relative to the build root. Use the empty string (`""`) to refer to
-    // the build root itself.
-    // A directory listed here means that all files within, recursively, are included.
     .paths = .{
         "build.zig",
         "build.zig.zon",

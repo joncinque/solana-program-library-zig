@@ -1,5 +1,5 @@
 const std = @import("std");
-const sol = @import("solana-program-sdk");
+const sol = @import("solana_program_sdk");
 const bincode = @import("bincode");
 
 const Account = sol.Account;
@@ -11,7 +11,7 @@ pub const id = sol.PublicKey.comptimeFromBase58("ComputeBudget111111111111111111
 pub fn requestHeapFrame(allocator: std.mem.Allocator, bytes: u32) !sol.Instruction {
     const data = try bincode.writeAlloc(allocator, ComputeBudget.Instruction{
         .request_heap_frame = .{ .bytes = bytes },
-    }, .{});
+    }, .default);
 
     return sol.Instruction.from(.{
         .program_id = &id,
@@ -23,7 +23,7 @@ pub fn requestHeapFrame(allocator: std.mem.Allocator, bytes: u32) !sol.Instructi
 pub fn setComputeUnitLimit(allocator: std.mem.Allocator, compute_units: u32) !sol.Instruction {
     const data = try bincode.writeAlloc(allocator, ComputeBudget.Instruction{
         .set_compute_unit_limit = .{ .compute_units = compute_units },
-    }, .{});
+    }, .default);
 
     return sol.Instruction.from(.{
         .program_id = &id,
@@ -35,7 +35,7 @@ pub fn setComputeUnitLimit(allocator: std.mem.Allocator, compute_units: u32) !so
 pub fn setComputeUnitPrice(allocator: std.mem.Allocator, micro_lamports: u64) !sol.Instruction {
     const data = try bincode.writeAlloc(allocator, ComputeBudget.Instruction{
         .set_compute_unit_price = .{ .micro_lamports = micro_lamports },
-    }, .{});
+    }, .default);
 
     return sol.Instruction.from(.{
         .program_id = &id,
@@ -47,7 +47,7 @@ pub fn setComputeUnitPrice(allocator: std.mem.Allocator, micro_lamports: u64) !s
 pub fn setLoadedAccountsDataSizeLimit(allocator: std.mem.Allocator, bytes: u32) !sol.Instruction {
     const data = try bincode.writeAlloc(allocator, ComputeBudget.Instruction{
         .set_loaded_accounts_data_size_limit = .{ .bytes = bytes },
-    }, .{});
+    }, .default);
 
     return sol.Instruction.from(.{
         .program_id = &id,

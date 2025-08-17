@@ -17,14 +17,14 @@ pub fn build(b: *std.Build) void {
 
     const dep_opts = .{ .target = target, .optimize = optimize };
     // Export self as a module
-    const sol_lib_mod = b.addModule("solana-program-library", .{
+    const sol_lib_mod = b.addModule("solana_program_library", .{
         .root_source_file = b.path("src/root.zig"),
         .target = target,
         .optimize = optimize,
     });
 
     const lib = b.addStaticLibrary(.{
-        .name = "solana-program-library",
+        .name = "solana_program_library",
         // In this case the main source file is merely a path, however, in more
         // complicated build scripts, this could be a generated file.
         .root_source_file = b.path("src/root.zig"),
@@ -33,10 +33,10 @@ pub fn build(b: *std.Build) void {
     });
 
     // Adding it as a module
-    const solana_dep = b.dependency("solana-program-sdk", dep_opts);
-    const solana_mod = solana_dep.module("solana-program-sdk");
-    lib.root_module.addImport("solana-program-sdk", solana_mod);
-    sol_lib_mod.addImport("solana-program-sdk", solana_mod);
+    const solana_dep = b.dependency("solana_program_sdk", dep_opts);
+    const solana_mod = solana_dep.module("solana_program_sdk");
+    lib.root_module.addImport("solana_program_sdk", solana_mod);
+    sol_lib_mod.addImport("solana_program_sdk", solana_mod);
 
     const bincode_dep = b.dependency("bincode", .{
         .target = target,
@@ -58,7 +58,7 @@ pub fn build(b: *std.Build) void {
         .target = target,
         .optimize = optimize,
     });
-    lib_unit_tests.root_module.addImport("solana-program-sdk", solana_mod);
+    lib_unit_tests.root_module.addImport("solana_program_sdk", solana_mod);
     lib_unit_tests.root_module.addImport("bincode", bincode_mod);
 
     const run_lib_unit_tests = b.addRunArtifact(lib_unit_tests);
