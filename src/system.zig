@@ -2,8 +2,8 @@ const std = @import("std");
 const bincode = @import("bincode");
 const sol = @import("solana_program_sdk");
 
-const Account = sol.Account;
-const PublicKey = sol.PublicKey;
+const Account = sol.account.Account;
+const PublicKey = sol.public_key.PublicKey;
 
 const SystemProgram = @This();
 pub const id = PublicKey.comptimeFromBase58("11111111111111111111111111111111");
@@ -25,7 +25,7 @@ pub fn createAccount(params: struct {
         },
     }, .default);
 
-    const instruction = sol.Instruction.from(.{
+    const instruction = sol.instruction.Instruction.from(.{
         .program_id = &id,
         .accounts = &[_]Account.Param{
             .{ .id = params.from.id, .is_writable = true, .is_signer = true },
@@ -48,7 +48,7 @@ pub fn transfer(params: struct {
         .transfer = .{ .lamports = params.lamports },
     }, .default);
 
-    const instruction = sol.Instruction.from(.{
+    const instruction = sol.instruction.Instruction.from(.{
         .program_id = &id,
         .accounts = &[_]Account.Param{
             .{ .id = params.from.id, .is_writable = true, .is_signer = true },
@@ -70,7 +70,7 @@ pub fn allocate(params: struct {
         .allocate = .{ .space = params.space },
     }, .default);
 
-    const instruction = sol.Instruction.from(.{
+    const instruction = sol.instruction.Instruction.from(.{
         .program_id = &id,
         .accounts = &[_]Account.Param{
             .{ .id = params.account.id, .is_writable = true, .is_signer = true },
@@ -91,7 +91,7 @@ pub fn assign(params: struct {
         .assign = .{ .owner_id = params.owner_id },
     }, .default);
 
-    const instruction = sol.Instruction.from(.{
+    const instruction = sol.instruction.Instruction.from(.{
         .program_id = &id,
         .accounts = &[_]Account.Param{
             .{ .id = params.account.id, .is_writable = true, .is_signer = true },
@@ -246,8 +246,8 @@ pub const Instruction = union(enum(u32)) {
 };
 
 test "SystemProgram.Instruction: serialize and deserialize" {
-    var buffer = std.ArrayList(u8).init(std.testing.allocator);
-    defer buffer.deinit();
+    var writer = std.Io.Writer.Allocating.init(std.testing.allocator);
+    defer writer.deinit();
 
     inline for (.{ bincode.Params.default, bincode.Params.legacy, bincode.Params.standard }) |params| {
         inline for (.{
@@ -259,10 +259,12 @@ test "SystemProgram.Instruction: serialize and deserialize" {
                 },
             },
         }) |payload| {
-            try bincode.write(buffer.writer(), payload, params);
-            var stream = std.io.fixedBufferStream(buffer.items);
-            try std.testing.expectEqual(payload, try bincode.read(std.testing.allocator, @TypeOf(payload), stream.reader(), params));
-            buffer.clearRetainingCapacity();
+            try bincode.write(&writer.writer, payload, params);
+            var buffer = writer.toArrayList();
+            defer buffer.deinit(std.testing.allocator);
+            var reader = std.Io.Reader.fixed(buffer.items);
+            try std.testing.expectEqual(payload, try bincode.read(std.testing.allocator, @TypeOf(payload), &reader, params));
+            writer.clearRetainingCapacity();
         }
     }
 }

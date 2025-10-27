@@ -1,4 +1,4 @@
-name: Build and test library
+name: Main
 
 on:
   push:
@@ -18,7 +18,7 @@ jobs:
       - uses: actions/checkout@v2
       - uses: goto-bus-stop/setup-zig@v2
         with:
-          version: 0.14.0
+          version: 0.15.2
       - run: zig build test --summary all
   lint:
     runs-on: ubuntu-latest
@@ -26,5 +26,5 @@ jobs:
       - uses: actions/checkout@v2
       - uses: goto-bus-stop/setup-zig@v2
         with:
-          version: 0.14.0
+          version: 0.15.2
       - run: zig fmt --check .

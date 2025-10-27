@@ -2,57 +2,59 @@ const std = @import("std");
 const sol = @import("solana_program_sdk");
 const bincode = @import("bincode");
 
-const Account = sol.Account;
+const Account = sol.account.Account;
+const PublicKey = sol.public_key.PublicKey;
+const SolInstruction = sol.instruction.Instruction;
 
 const ComputeBudget = @This();
 
-pub const id = sol.PublicKey.comptimeFromBase58("ComputeBudget111111111111111111111111111111");
+pub const id = PublicKey.comptimeFromBase58("ComputeBudget111111111111111111111111111111");
 
-pub fn requestHeapFrame(allocator: std.mem.Allocator, bytes: u32) !sol.Instruction {
+pub fn requestHeapFrame(allocator: std.mem.Allocator, bytes: u32) !SolInstruction {
     const data = try bincode.writeAlloc(allocator, ComputeBudget.Instruction{
         .request_heap_frame = .{ .bytes = bytes },
     }, .default);
 
-    return sol.Instruction.from(.{
+    return SolInstruction.from(.{
         .program_id = &id,
         .accounts = &[_]Account.Param{},
-        .data = data,
+        .data = data.items,
     });
 }
 
-pub fn setComputeUnitLimit(allocator: std.mem.Allocator, compute_units: u32) !sol.Instruction {
+pub fn setComputeUnitLimit(allocator: std.mem.Allocator, compute_units: u32) !SolInstruction {
     const data = try bincode.writeAlloc(allocator, ComputeBudget.Instruction{
         .set_compute_unit_limit = .{ .compute_units = compute_units },
     }, .default);
 
-    return sol.Instruction.from(.{
+    return SolInstruction.from(.{
         .program_id = &id,
         .accounts = &[_]Account.Param{},
-        .data = data,
+        .data = data.items,
     });
 }
 
-pub fn setComputeUnitPrice(allocator: std.mem.Allocator, micro_lamports: u64) !sol.Instruction {
+pub fn setComputeUnitPrice(allocator: std.mem.Allocator, micro_lamports: u64) !SolInstruction {
     const data = try bincode.writeAlloc(allocator, ComputeBudget.Instruction{
         .set_compute_unit_price = .{ .micro_lamports = micro_lamports },
     }, .default);
 
-    return sol.Instruction.from(.{
+    return SolInstruction.from(.{
         .program_id = &id,
         .accounts = &[_]Account.Param{},
-        .data = data,
+        .data = data.items,
     });
 }
 
-pub fn setLoadedAccountsDataSizeLimit(allocator: std.mem.Allocator, bytes: u32) !sol.Instruction {
+pub fn setLoadedAccountsDataSizeLimit(allocator: std.mem.Allocator, bytes: u32) !SolInstruction {
     const data = try bincode.writeAlloc(allocator, ComputeBudget.Instruction{
         .set_loaded_accounts_data_size_limit = .{ .bytes = bytes },
     }, .default);
 
-    return sol.Instruction.from(.{
+    return SolInstruction.from(.{
         .program_id = &id,
         .accounts = &[_]Account.Param{},
-        .data = data,
+        .data = data.items,
     });
 }
 

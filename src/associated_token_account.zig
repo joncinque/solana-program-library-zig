@@ -2,8 +2,12 @@ const std = @import("std");
 const bincode = @import("bincode");
 const sol = @import("solana_program_sdk");
 
+const Account = sol.account.Account;
+const ProgramDerivedAddress = sol.public_key.ProgramDerivedAddress;
+const PublicKey = sol.public_key.PublicKey;
+
 const AssociatedTokenAccountProgram = @This();
-pub const id = sol.PublicKey.comptimeFromBase58("ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL");
+pub const id = PublicKey.comptimeFromBase58("ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL");
 
 pub const Instruction = union(enum(u8)) {
     /// Creates an associated token account for the given wallet address and token mint
@@ -48,31 +52,31 @@ pub const Instruction = union(enum(u8)) {
     recover_nested: void,
 };
 
-pub fn getAssociatedTokenAccountAddressWithProgramId(wallet_address: sol.PublicKey, mint_address: sol.PublicKey) !sol.PublicKey {
+pub fn getAssociatedTokenAccountAddressWithProgramId(wallet_address: PublicKey, mint_address: PublicKey) !PublicKey {
     const pda = try getAssociatedTokenAccountAddressAndBumpSeed(wallet_address, mint_address);
     return pda.address;
 }
 
-pub fn getAssociatedTokenAccountAddressAndBumpSeed(wallet_address: sol.PublicKey, mint_address: sol.PublicKey, token_program_id: sol.PublicKey) !sol.ProgramDerivedAddress {
-    return sol.PublicKey.findProgramAddress(.{ wallet_address, token_program_id, mint_address }, id);
+pub fn getAssociatedTokenAccountAddressAndBumpSeed(wallet_address: PublicKey, mint_address: PublicKey, token_program_id: PublicKey) !ProgramDerivedAddress {
+    return PublicKey.findProgramAddress(.{ wallet_address, token_program_id, mint_address }, id);
 }
 
 pub fn createAccount(params: struct {
-    funder: sol.Account.Info,
-    account: sol.Account.Info,
-    owner: sol.Account.Info,
-    mint: sol.Account.Info,
-    system_program: sol.Account.Info,
-    token_program: sol.Account.Info,
-    rent: sol.Account.Info,
+    funder: Account.Info,
+    account: Account.Info,
+    owner: Account.Info,
+    mint: Account.Info,
+    system_program: Account.Info,
+    token_program: Account.Info,
+    rent: Account.Info,
     seeds: []const []const []const u8 = &.{},
 }) !void {
     var data: [1]u8 = undefined;
     _ = try bincode.writeToSlice(&data, AssociatedTokenAccountProgram.Instruction.create, .default);
 
-    const instruction = sol.Instruction.from(.{
+    const instruction = sol.instruction.Instruction.from(.{
         .program_id = &id,
-        .accounts = &[_]sol.Account.Param{
+        .accounts = &[_]Account.Param{
             .{ .id = params.funder.id, .is_writable = true, .is_signer = true },
             .{ .id = params.account.id, .is_writable = true, .is_signer = false },
             .{ .id = params.owner.id, .is_writable = false, .is_signer = false },
@@ -96,21 +100,21 @@ pub fn createAccount(params: struct {
 }
 
 pub fn createIdempotentAccount(params: struct {
-    funder: sol.Account.Info,
-    account: sol.Account.Info,
-    owner: sol.Account.Info,
-    mint: sol.Account.Info,
-    system_program: sol.Account.Info,
-    token_program: sol.Account.Info,
-    associated_token_program: sol.Account.Info,
+    funder: Account.Info,
+    account: Account.Info,
+    owner: Account.Info,
+    mint: Account.Info,
+    system_program: Account.Info,
+    token_program: Account.Info,
+    associated_token_program: Account.Info,
     seeds: []const []const []const u8 = &.{},
 }) !void {
     var data: [1]u8 = undefined;
     _ = try bincode.writeToSlice(&data, AssociatedTokenAccountProgram.Instruction.create_idempotent, .default);
 
-    const instruction = sol.Instruction.from(.{
+    const instruction = sol.instruction.Instruction.from(.{
         .program_id = &id,
-        .accounts = &[_]sol.Account.Param{
+        .accounts = &[_]Account.Param{
             .{ .id = params.funder.id, .is_writable = true, .is_signer = true },
             .{ .id = params.account.id, .is_writable = true, .is_signer = false },
             .{ .id = params.owner.id, .is_writable = false, .is_signer = false },
@@ -133,22 +137,22 @@ pub fn createIdempotentAccount(params: struct {
 }
 
 pub fn recoverNestedAccount(params: struct {
-    account: sol.Account.Info,
-    nested_mint: sol.Account.Info,
-    destination_associated_account: sol.Account.Info,
-    owner_associated_account: sol.Account.Info,
-    owner_mint: sol.Account.Info,
-    owner: sol.Account.Info,
-    token_program: sol.Account.Info,
-    associated_token_program: sol.Account.Info,
+    account: Account.Info,
+    nested_mint: Account.Info,
+    destination_associated_account: Account.Info,
+    owner_associated_account: Account.Info,
+    owner_mint: Account.Info,
+    owner: Account.Info,
+    token_program: Account.Info,
+    associated_token_program: Account.Info,
     seeds: []const []const []const u8 = &.{},
 }) !void {
     var data: [1]u8 = undefined;
     _ = try bincode.writeToSlice(&data, AssociatedTokenAccountProgram.Instruction.recover_nested, .default);
 
-    const instruction = sol.Instruction.from(.{
+    const instruction = sol.instruction.Instruction.from(.{
         .program_id = &id,
-        .accounts = &[_]sol.Account.Param{
+        .accounts = &[_]Account.Param{
             .{ .id = params.account.id, .is_writable = true, .is_signer = false },
             .{ .id = params.nested_mint.id, .is_writable = false, .is_signer = false },
             .{ .id = params.destination_associated_account.id, .is_writable = true, .is_signer = false },
