@@ -2,8 +2,12 @@ const std = @import("std");
 const sol = @import("solana_program_sdk");
 const bincode = @import("bincode");
 
+const SolAccount = sol.account.Account;
+const SolInstruction = sol.instruction.Instruction;
+const PublicKey = sol.public_key.PublicKey;
+
 const TokenProgram = @This();
-pub const id = sol.PublicKey.comptimeFromBase58("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA");
+pub const id = PublicKey.comptimeFromBase58("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA");
 
 pub const Error = error{
     NotRentExempt,
@@ -67,9 +71,9 @@ pub const Instruction = union(enum(u8)) {
         /// Number of base 10 digits to the right of the decimal place.
         decimals: u8,
         /// The authority/multisignature to mint tokens.
-        mint_authority_id: sol.PublicKey,
+        mint_authority_id: PublicKey,
         /// The freeze authority/multisignature of the mint.
-        freeze_authority_id: ?sol.PublicKey,
+        freeze_authority_id: ?PublicKey,
     },
     /// Initializes a new account to hold tokens.  If this account is associated
     /// with the native mint then the token balance of the initialized account
@@ -183,7 +187,7 @@ pub const Instruction = union(enum(u8)) {
         /// The type of authority to update.
         authority_type: AuthorityType,
         /// The new authority.
-        new_authority_id: ?sol.PublicKey,
+        new_authority_id: ?PublicKey,
     },
     /// Mints new tokens to an account.  The native mint does not support
     /// minting.
@@ -389,7 +393,7 @@ pub const Instruction = union(enum(u8)) {
     ///   3. `[]` Rent sysvar
     initialize_account_2: struct {
         /// The new account's owner/multisignature.
-        owner_id: sol.PublicKey,
+        owner_id: PublicKey,
     },
     /// Given a wrapped / native token account (a token account containing SOL)
     /// updates its amount field based on the account's underlying `lamports`.
@@ -409,7 +413,7 @@ pub const Instruction = union(enum(u8)) {
     ///   1. `[]` The mint this account will be associated with.
     initialize_account_3: struct {
         /// The new account's owner/multisignature.
-        owner_id: sol.PublicKey,
+        owner_id: PublicKey,
     },
     /// Like InitializeMultisig, but does not require the Rent sysvar to be provided
     ///
@@ -433,9 +437,9 @@ pub const Instruction = union(enum(u8)) {
         /// Number of base 10 digits to the right of the decimal place.
         decimals: u8,
         /// The authority/multisignature to mint tokens.
-        mint_authority_id: sol.PublicKey,
+        mint_authority_id: PublicKey,
         /// The freeze authority/multisignature of the mint.
-        freeze_authority_id: ?sol.PublicKey,
+        freeze_authority_id: ?PublicKey,
     },
     /// Gets the required size of an account for the given mint as a little-endian
     /// `u64`.
@@ -500,11 +504,11 @@ pub const Instruction = union(enum(u8)) {
 pub const Mint = struct {
     pub const len = 82;
 
-    authority: bincode.Option(sol.PublicKey),
+    authority: bincode.Option(PublicKey),
     supply: u64,
     decimals: u8,
     is_initialized: bool,
-    freeze_authority: bincode.Option(sol.PublicKey),
+    freeze_authority: bincode.Option(PublicKey),
 
     pub fn decode(bytes: []const u8) !Mint {
         return bincode.readFromSlice(undefined, Mint, bytes, .default);
@@ -524,14 +528,14 @@ pub const Account = struct {
         frozen,
     };
 
-    mint_id: sol.PublicKey,
-    owner: sol.PublicKey,
+    mint_id: PublicKey,
+    owner: PublicKey,
     amount: u64,
-    delegate_id: bincode.Option(sol.PublicKey),
+    delegate_id: bincode.Option(PublicKey),
     state: Account.State,
     is_native: bincode.Option(u64),
     delegated_amount: u64,
-    close_authority_id: bincode.Option(sol.PublicKey),
+    close_authority_id: bincode.Option(PublicKey),
 
     pub fn decode(bytes: []const u8) !Account {
         return bincode.readFromSlice(undefined, Account, bytes, .default);
@@ -556,15 +560,15 @@ pub const Multisig = struct {
     /// Is `true` if this structure has been initialized
     is_initialized: bool,
     /// Signer public keys
-    signers: [Multisig.max_signers]sol.PublicKey,
+    signers: [Multisig.max_signers]PublicKey,
 };
 
 pub fn initializeMint(params: struct {
-    mint: sol.Account.Info,
-    mint_authority_id: sol.PublicKey,
-    freeze_authority_id: ?sol.PublicKey,
+    mint: SolAccount.Info,
+    mint_authority_id: PublicKey,
+    freeze_authority_id: ?PublicKey,
     decimals: u8,
-    rent: sol.Account.Info,
+    rent: SolAccount.Info,
     seeds: []const []const []const u8 = &.{},
 }) !void {
     var data: [67]u8 = undefined;
@@ -576,9 +580,9 @@ pub fn initializeMint(params: struct {
         },
     }, .default);
 
-    const instruction = sol.Instruction.from(.{
+    const instruction = SolInstruction.from(.{
         .program_id = &id,
-        .accounts = &[_]sol.Account.Param{
+        .accounts = &[_]SolAccount.Param{
             .{ .id = params.mint.id, .is_writable = true, .is_signer = false },
             .{ .id = params.rent.id, .is_writable = false, .is_signer = false },
         },
@@ -589,18 +593,18 @@ pub fn initializeMint(params: struct {
 }
 
 pub fn initializeAccount(params: struct {
-    account: sol.Account.Info,
-    mint: sol.Account.Info,
-    owner: sol.Account.Info,
-    rent: sol.Account.Info,
+    account: SolAccount.Info,
+    mint: SolAccount.Info,
+    owner: SolAccount.Info,
+    rent: SolAccount.Info,
     seeds: []const []const []const u8 = &.{},
 }) !void {
     var data: [1]u8 = undefined;
     _ = try bincode.writeToSlice(&data, TokenProgram.Instruction.initialize_account, .default);
 
-    const instruction = sol.Instruction.from(.{
+    const instruction = SolInstruction.from(.{
         .program_id = &id,
-        .accounts = &[_]sol.Account.Param{
+        .accounts = &[_]SolAccount.Param{
             .{ .id = params.account.id, .is_writable = true, .is_signer = false },
             .{ .id = params.mint.id, .is_writable = false, .is_signer = false },
             .{ .id = params.owner.id, .is_writable = false, .is_signer = false },
@@ -613,12 +617,12 @@ pub fn initializeAccount(params: struct {
 }
 
 pub fn transfer(params: struct {
-    from: sol.Account.Info,
-    to: sol.Account.Info,
+    from: SolAccount.Info,
+    to: SolAccount.Info,
     amount: u64,
     authority: union(enum) {
-        single: sol.Account.Info,
-        multiple: []const sol.Account.Info,
+        single: SolAccount.Info,
+        multiple: []const SolAccount.Info,
     },
     seeds: []const []const []const u8 = &.{},
 }) !void {
@@ -627,9 +631,9 @@ pub fn transfer(params: struct {
         .transfer = .{ .amount = params.amount },
     }, .default);
 
-    const instruction = sol.Instruction.from(.{
+    const instruction = SolInstruction.from(.{
         .program_id = &id,
-        .accounts = &[_]sol.Account.Param{
+        .accounts = &[_]SolAccount.Param{
             .{ .id = params.from.id, .is_writable = true, .is_signer = false },
             .{ .id = params.to.id, .is_writable = true, .is_signer = false },
             .{ .id = params.authority.single.id, .is_writable = false, .is_signer = true },
@@ -641,13 +645,13 @@ pub fn transfer(params: struct {
 }
 
 pub fn setAuthority(params: struct {
-    mint_or_account: sol.Account.Info,
+    mint_or_account: SolAccount.Info,
     authority: union(enum) {
-        single: sol.Account.Info,
-        multiple: []const sol.Account.Info,
+        single: SolAccount.Info,
+        multiple: []const SolAccount.Info,
     },
     authority_type: AuthorityType,
-    new_authority_id: ?sol.PublicKey,
+    new_authority_id: ?PublicKey,
     seeds: []const []const []const u8 = &.{},
 }) !void {
     var data: [35]u8 = undefined;
@@ -658,9 +662,9 @@ pub fn setAuthority(params: struct {
         },
     }, .default);
 
-    const instruction = sol.Instruction.from(.{
+    const instruction = SolInstruction.from(.{
         .program_id = &id,
-        .accounts = &[_]sol.Account.Param{
+        .accounts = &[_]SolAccount.Param{
             .{ .id = params.mint_or_account.id, .is_writable = true, .is_signer = false },
             .{ .id = params.authority.single.id, .is_writable = false, .is_signer = true },
         },
@@ -671,11 +675,11 @@ pub fn setAuthority(params: struct {
 }
 
 pub fn burn(params: struct {
-    account: sol.Account.Info,
-    mint: sol.Account.Info,
+    account: SolAccount.Info,
+    mint: SolAccount.Info,
     authority: union(enum) {
-        single: sol.Account.Info,
-        multiple: []const sol.Account.Info,
+        single: SolAccount.Info,
+        multiple: []const SolAccount.Info,
     },
     amount: u64,
     seeds: []const []const []const u8 = &.{},
@@ -687,9 +691,9 @@ pub fn burn(params: struct {
         },
     }, .default);
 
-    const instruction = sol.Instruction.from(.{
+    const instruction = SolInstruction.from(.{
         .program_id = &id,
-        .accounts = &[_]sol.Account.Param{
+        .accounts = &[_]SolAccount.Param{
             .{ .id = params.account.id, .is_writable = true, .is_signer = false },
             .{ .id = params.mint.id, .is_writable = true, .is_signer = false },
             .{ .id = params.authority.single.id, .is_writable = false, .is_signer = true },
@@ -701,12 +705,12 @@ pub fn burn(params: struct {
 }
 
 pub fn mintTo(params: struct {
-    mint: sol.Account.Info,
-    account: sol.Account.Info,
+    mint: SolAccount.Info,
+    account: SolAccount.Info,
     amount: u64,
     mint_authority: union(enum) {
-        single: sol.Account.Info,
-        multiple: []const sol.Account.Info,
+        single: SolAccount.Info,
+        multiple: []const SolAccount.Info,
     },
     seeds: []const []const []const u8 = &.{},
 }) !void {
@@ -717,9 +721,9 @@ pub fn mintTo(params: struct {
         },
     }, .default);
 
-    const instruction = sol.Instruction.from(.{
+    const instruction = SolInstruction.from(.{
         .program_id = &id,
-        .accounts = &[_]sol.Account.Param{
+        .accounts = &[_]SolAccount.Param{
             .{ .id = params.mint.id, .is_writable = true, .is_signer = false },
             .{ .id = params.account.id, .is_writable = true, .is_signer = false },
             .{ .id = params.mint_authority.single.id, .is_writable = false, .is_signer = true },
@@ -731,17 +735,17 @@ pub fn mintTo(params: struct {
 }
 
 pub fn closeAccount(params: struct {
-    account: sol.Account.Info,
-    account_to_receive_remaining_tokens: sol.Account.Info,
-    owner: sol.Account.Info,
+    account: SolAccount.Info,
+    account_to_receive_remaining_tokens: SolAccount.Info,
+    owner: SolAccount.Info,
     seeds: []const []const []const u8 = &.{},
 }) !void {
     var data: [1]u8 = undefined;
     _ = try bincode.writeToSlice(&data, TokenProgram.Instruction.close_account, .default);
 
-    const instruction = sol.Instruction.from(.{
+    const instruction = SolInstruction.from(.{
         .program_id = &id,
-        .accounts = &[_]sol.Account.Param{
+        .accounts = &[_]SolAccount.Param{
             .{ .id = params.account.id, .is_writable = true, .is_signer = false },
             .{ .id = params.account_to_receive_remaining_tokens.id, .is_writable = true, .is_signer = false },
             .{ .id = params.owner.id, .is_writable = false, .is_signer = true },
@@ -753,20 +757,20 @@ pub fn closeAccount(params: struct {
 }
 
 pub fn freezeAccount(params: struct {
-    account: sol.Account.Info,
-    mint: sol.Account.Info,
+    account: SolAccount.Info,
+    mint: SolAccount.Info,
     freeze_authority: union(enum) {
-        single: sol.Account.Info,
-        multiple: []const sol.Account.Info,
+        single: SolAccount.Info,
+        multiple: []const SolAccount.Info,
     },
     seeds: []const []const []const u8 = &.{},
 }) !void {
     var data: [1]u8 = undefined;
     _ = try bincode.writeToSlice(&data, TokenProgram.Instruction.freeze_account, .default);
 
-    const instruction = sol.Instruction.from(.{
+    const instruction = SolInstruction.from(.{
         .program_id = &id,
-        .accounts = &[_]sol.Account.Param{
+        .accounts = &[_]SolAccount.Param{
             .{ .id = params.account.id, .is_writable = true, .is_signer = false },
             .{ .id = params.mint.id, .is_writable = false, .is_signer = false },
             .{ .id = params.freeze_authority.single.id, .is_writable = false, .is_signer = true },
