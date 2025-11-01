@@ -9,8 +9,8 @@
             .hash = "bincode-0.15.1-LYspxORwAAC0ty6JQz_DAmUk2gHiOMmJnYveMUEW939Z",
         },
         .solana_program_sdk = .{
-            .url = "https://github.com/joncinque/solana-program-sdk-zig/archive/refs/tags/v0.17.0.tar.gz",
-            .hash = "solana_program_sdk-0.17.0-wGj9UHjiAAC5lyL1BQ4MI7wcQYrqSjHrxdvZXDaA8Glb",
+            .url = "https://github.com/joncinque/solana-program-sdk-zig/archive/refs/tags/v0.17.1.tar.gz",
+            .hash = "solana_program_sdk-0.17.1-wGj9UBrlAADAagTi3MSX1vSpGg-DePWB_5znbUgMlH1U",
         },
     },
     .paths = .{
