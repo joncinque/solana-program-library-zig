@@ -52,8 +52,8 @@ pub const Instruction = union(enum(u8)) {
     recover_nested: void,
 };
 
-pub fn getAssociatedTokenAccountAddressWithProgramId(wallet_address: PublicKey, mint_address: PublicKey) !PublicKey {
-    const pda = try getAssociatedTokenAccountAddressAndBumpSeed(wallet_address, mint_address);
+pub fn getAssociatedTokenAccountAddressWithProgramId(wallet_address: PublicKey, mint_address: PublicKey, token_program_id: PublicKey) !PublicKey {
+    const pda = try getAssociatedTokenAccountAddressAndBumpSeed(wallet_address, mint_address, token_program_id);
     return pda.address;
 }
 
