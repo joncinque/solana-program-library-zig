@@ -1,16 +1,16 @@
 .{
     .fingerprint = 0xa4b85d3595fe4ad7,
     .name = .solana_program_library,
-    .version = "0.16.1",
-    .minimum_zig_version = "0.15.0",
+    .version = "0.17.0",
+    .minimum_zig_version = "0.16.0",
     .dependencies = .{
         .bincode = .{
-            .url = "https://github.com/joncinque/bincode-zig/archive/refs/tags/v0.15.1.tar.gz",
-            .hash = "bincode-0.15.1-LYspxORwAAC0ty6JQz_DAmUk2gHiOMmJnYveMUEW939Z",
+            .url = "https://github.com/joncinque/bincode-zig/archive/refs/tags/v0.16.0.tar.gz",
+            .hash = "bincode-0.16.0-LYspxMNwAABZLqPleuqAScRCIqfBVoblGAbi-3NIIPLa",
         },
         .solana_program_sdk = .{
-            .url = "https://github.com/joncinque/solana-program-sdk-zig/archive/refs/tags/v0.17.1.tar.gz",
-            .hash = "solana_program_sdk-0.17.1-wGj9UBrlAADAagTi3MSX1vSpGg-DePWB_5znbUgMlH1U",
+            .url = "https://github.com/joncinque/solana-program-sdk-zig/archive/refs/tags/v0.18.0.tar.gz",
+            .hash = "solana_program_sdk-0.18.0-wGj9UCPlAAC_UeDyaPG9rZdoAt0Z-uqfgzQim7M-w9jJ",
         },
     },
     .paths = .{
